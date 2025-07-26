@@ -1,33 +1,36 @@
-const express = require("express");
-const cookieParser = require("cookie-parser");
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const express = require('express');
+const cookies = require('cookie-parser');
+const proxy = require('http-proxy-middleware').createProxyMiddleware;
 
 const app = express();
-const storedCookies = [];
-const PORT = 5000;
 
-app.use(cookieParser());
+app.use(cookies());
 
-const customProxy = createProxyMiddleware({
-  target: "https://vapor.my/",
-  changeOrigin: true,
-  onProxyReq: (proxyReq) => {
-    storedCookies.forEach((cookie) => {
-      proxyReq.setHeader("cookie", `${cookie.name}=${cookie.value}`);
+const handler = proxy({
+  target: 'https://vapor.my',
+  changeOrigin: true, // Important for the target to recognize the host correctly
+  onProxyReq: (proxyReq, req, res) => {
+    // This forwards the client's original cookies to the target
+    if (req.headers.cookie) {
+      proxyReq.setHeader('cookie', req.headers.cookie);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    // You can inspect or modify response headers from the target here if needed.
+    // For a straightforward proxy, no changes are often necessary.
+  },
+  onError: (err, req, res) => {
+    // This block handles errors that occur during the proxy operation itself.
+    // We send a generic 500 error here, but the browser won't see "random characters"
+    // from the proxied site if the proxy fails.
+    console.error('Proxy error:', err); // Log the actual error for debugging
+    res.writeHead(500, {
+      'Content-Type': 'text/html' // Fallback for error page
     });
+    res.end('<h1>500 - Proxy Error</h1><p>Something went wrong trying to reach the target website.</p>');
   }
 });
 
-app.use((req, res, next) => {
-  const ignoredPaths = ["/chat-old.html"];
+app.use(handler);
 
-  if (!ignoredPaths.includes(req.url)) {
-    customProxy(req, res, next);
-  } else {
-    next();
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`FA-v2 server listening on port ${PORT}`);
-});
+module.exports = app;
