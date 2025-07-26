@@ -1,30 +1,33 @@
-const express = require('express');
-const cookies = require('cookie-parser');
-const proxy = require('http-proxy-middleware').createProxyMiddleware;
+const express = require("express");
+const cookieParser = require("cookie-parser");
+const { createProxyMiddleware } = require("http-proxy-middleware");
 
 const app = express();
+const storedCookies = [];
+const PORT = 8080;
 
-app.use(cookies());
+app.use(cookieParser());
 
-const handler = proxy({
-  target: 'https://vapor.my',
-  changeOrigin: true, 
-  onProxyReq: (proxyReq, req, res) => {
-    if (req.headers.cookie) {
-      proxyReq.setHeader('cookie', req.headers.cookie);
-    }
-  },
-  onProxyRes: (proxyRes, req, res) => {
-  },
-  onError: (err, req, res) => {
-    console.error('Proxy error:', err); 
-    res.writeHead(500, {
-      'Content-Type': 'text/html' 
+const customProxy = createProxyMiddleware({
+  target: "https://vapor.my/",
+  changeOrigin: true,
+  onProxyReq: (proxyReq) => {
+    storedCookies.forEach((cookie) => {
+      proxyReq.setHeader("cookie", `${cookie.name}=${cookie.value}`);
     });
-    res.end('<h1>500 </h1><p>Interal error..</p>');
   }
 });
 
-app.use(handler);
+app.use((req, res, next) => {
+  const ignoredPaths = ["/chat-old.html"];
 
-module.exports = app;
+  if (!ignoredPaths.includes(req.url)) {
+    customProxy(req, res, next);
+  } else {
+    next();
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`listening on port ${PORT}`);
+});
