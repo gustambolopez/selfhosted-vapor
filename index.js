@@ -4,7 +4,7 @@ const { createProxyMiddleware } = require("http-proxy-middleware")
 
 const app = express()
 const storedcookies = []
-const port = 8080
+const port = 8080 // best port fr no shit
 
 app.use(cookieParser())
 
@@ -20,7 +20,6 @@ const vaporontop = createProxyMiddleware({
 
 app.use(vaporontop)
 
-// 8080 my king gng
 app.listen(port, () => {
   console.log(`listening on port ${port}`)
 })
