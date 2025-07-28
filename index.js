@@ -1,33 +1,27 @@
-const express = require("express");
-const cookieParser = require("cookie-parser");
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const express = require("express")
+const cookieParser = require("cookie-parser")
+const { createProxyMiddleware } = require("http-proxy-middleware")
 
-const app = express();
-const storedCookies = [];
-const PORT = 8080;
+const app = express()
+const storedcookies = []
+const port = 8080
 
-app.use(cookieParser());
+app.use(cookieParser())
 
-const customProxy = createProxyMiddleware({
+const vaporontop = createProxyMiddleware({
   target: "https://vapor.my/",
   changeOrigin: true,
   onProxyReq: (proxyReq) => {
-    storedCookies.forEach((cookie) => {
-      proxyReq.setHeader("cookie", `${cookie.name}=${cookie.value}`);
-    });
+    storedcookies.forEach((cookie) => {
+      proxyReq.setHeader("cookie", `${cookie.name}=${cookie.value}`)
+    })
   }
-});
+})
 
-app.use((req, res, next) => {
-  const ignoredPaths = ["/chat-old.html"];
+app.use(vaporontop)
 
-  if (!ignoredPaths.includes(req.url)) {
-    customProxy(req, res, next);
-  } else {
-    next();
-  }
-});
+// 8080 my king gng
+app.listen(port, () => {
+  console.log(`listening on port ${port}`)
+})
 
-app.listen(PORT, () => {
-  console.log(`listening on port ${PORT}`);
-});
